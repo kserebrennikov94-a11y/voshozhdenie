@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="ru" class="h-full bg-slate-950 text-slate-100">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Восхождение на Пик Настоящих Мужчин</title>
+  
+  <!-- Telegram WebApp SDK -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            amber: {
+              450: '#F59E0B',
+            }
+          },
+          animation: {
+            'pulse-slow': 'pulse 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            'bounce-gentle': 'bounce 2s infinite',
+            'glow-pulse': 'glow 2s ease-in-out infinite alternate',
+          },
+          keyframes: {
+            glow: {
+              '0%': { filter: 'drop-shadow(0 0 6px rgba(245, 158, 11, 0.6))' },
+              '100%': { filter: 'drop-shadow(0 0 16px rgba(245, 158, 11, 0.95))' }
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    
+    body {
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .glass-card {
+      background: rgba(15, 23, 42, 0.78);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .glass-hud {
+      background: rgba(10, 15, 29, 0.85);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+  </style>
+</head>
+<body class="h-full w-full bg-slate-950 overflow-hidden flex justify-center items-center select-none">
+
+  <!-- Mobile Frame Container -->
+  <div id="app" class="relative w-full max-w-[480px] h-full max-h-[100vh] bg-slate-900 flex flex-col overflow-hidden shadow-2xl border-x border-slate-800/50">
+    
+    <!-- Top HUD Navigation Header -->
+    <header class="glass-hud sticky top-0 z-30 px-4 py-3 flex items-center justify-between shrink-0 shadow-lg">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center text-white shadow-md shadow-amber-500/20">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-1.5">
+            <span class="text-xs text-slate-400 font-medium">Текущая высота</span>
+            <span id="hud-stage-badge" class="px-1.5 py-0.5 text-[10px] font-extrabold bg-amber-500/20 text-amber-400 rounded border border-amber-500/30">Этап 1/12</span>
+          </div>
+          <div class="text-lg font-black tracking-tight text-white flex items-baseline gap-1">
+            <span id="hud-elevation">500</span> <span class="text-xs font-semibold text-slate-400">м</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Stage Controls & Local File Load -->
+      <div class="flex items-center gap-1.5 bg-slate-800/80 p-1 rounded-xl border border-slate-700/50">
+        <button id="btn-prev-stage" onclick="changeStage(-1)" class="w-8 h-8 rounded-lg bg-slate-700/60 hover:bg-slate-700 text-slate-200 flex items-center justify-center font-bold active:scale-95 transition" title="Предыдущий этап">
+          &minus;
+        </button>
+        <button id="btn-next-stage" onclick="changeStage(1)" class="w-8 h-8 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-black flex items-center justify-center shadow active:scale-95 transition" title="Следующий этап">
+          &#43;
+        </button>
+        
+        <label for="map-file-input" class="w-8 h-8 rounded-lg bg-slate-700/60 hover:bg-slate-700 text-slate-300 flex items-center justify-center cursor-pointer transition ml-1" title="Загрузить файл карты">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+          </svg>
+        </label>
+        <input type="file" id="map-file-input" accept="image/*" class="hidden" onchange="handleMapFileUpload(event)">
+      </div>
+    </header>
+
+    <!-- Main Content Tab Views -->
+    <main class="relative flex-1 overflow-hidden bg-slate-950">
+      
+      <!-- TAB 1: 9:21 MAP VIEW -->
+      <div id="tab-map" class="w-full h-full overflow-y-auto overflow-x-hidden no-scrollbar relative">
+        <div id="map-scroll-container" class="relative w-full aspect-[9/21] min-h-[950px] bg-slate-900 mx-auto">
+          
+          <img 
+            id="map-bg-img" 
+            src="watermarked_img_13866416841372034919.jpg" 
+            alt="Карта восхождения" 
+            class="absolute inset-0 w-full h-full object-cover z-0 transition-opacity duration-500"
+            onerror="handleMapImageError()"
+          />
+
+          <div id="map-svg-fallback" class="hidden absolute inset-0 w-full h-full z-0 bg-slate-900">
+            <svg viewBox="0 0 450 1050" class="w-full h-full" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="bgGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#0f172a"/>
+                  <stop offset="40%" stop-color="#1e293b"/>
+                  <stop offset="75%" stop-color="#14532d"/>
+                  <stop offset="100%" stop-color="#022c22"/>
+                </linearGradient>
+                <linearGradient id="snowGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#ffffff"/>
+                  <stop offset="100%" stop-color="#cbd5e1"/>
+                </linearGradient>
+              </defs>
+              <rect width="450" height="1050" fill="url(#bgGrad)"/>
+              <polygon points="225,50 420,400 30,400" fill="#334155"/>
+              <polygon points="225,50 350,220 225,260 100,200" fill="url(#snowGrad)"/>
+              <polygon points="120,300 450,700 0,700" fill="#1e293b"/>
+              <path d="M 157,887 L 267,808 L 353,761 L 348,677 L 281,614 L 139,551 L 312,451 L 339,362 L 159,294 L 267,225 L 319,152 L 249,78" 
+                    fill="none" stroke="#f59e0b" stroke-width="4" stroke-dasharray="8 6" stroke-linecap="round" opacity="0.8"/>
+            </svg>
+          </div>
+
+          <div id="map-checkpoints-layer" class="absolute inset-0 z-10"></div>
+
+        </div>
+      </div>
+
+      <!-- TAB 2: BACKPACK / INVENTORY VIEW -->
+      <div id="tab-backpack" class="hidden w-full h-full overflow-y-auto no-scrollbar p-4 pb-24 bg-slate-950">
+        <div class="max-w-md mx-auto space-y-4">
+          
+          <div class="glass-card rounded-2xl p-4 border border-amber-500/20 bg-gradient-to-r from-slate-900 to-amber-950/30 flex items-center justify-between">
+            <div>
+              <h2 class="text-lg font-black text-white flex items-center gap-2">
+                🎒 Рюкзак Экспедиции
+              </h2>
+              <p class="text-xs text-slate-400 mt-0.5">Снаряжение и разблокированные артефакты</p>
+            </div>
+            <div class="text-right">
+              <span id="backpack-progress-count" class="text-xl font-black text-amber-400">1/12</span>
+              <div class="text-[10px] text-slate-400 font-medium">Собрано</div>
+            </div>
+          </div>
+
+          <div id="backpack-grid" class="grid grid-cols-2 gap-3"></div>
+
+        </div>
+      </div>
+
+    </main>
+
+    <!-- Bottom Navigation Bar -->
+    <nav class="glass-hud sticky bottom-0 z-30 px-6 py-2.5 flex items-center justify-around shrink-0 border-t border-slate-800/80 pb-safe">
+      <button id="nav-btn-map" onclick="switchTab('map')" class="flex flex-col items-center gap-1 text-amber-400 transition font-semibold">
+        <div class="p-1.5 rounded-xl bg-amber-500/10 border border-amber-500/20">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
+          </svg>
+        </div>
+        <span class="text-[11px]">🗺 Карта</span>
+      </button>
+
+      <button id="nav-btn-backpack" onclick="switchTab('backpack')" class="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-200 transition font-medium">
+        <div class="p-1.5 rounded-xl bg-slate-800/50 border border-slate-700/50">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
+          </svg>
+        </div>
+        <span class="text-[11px]">🎒 Рюкзак</span>
+      </button>
+    </nav>
+
+    <!-- Modal Detail Bottom Sheet -->
+    <div id="stage-modal" class="hidden fixed inset-0 z-50 flex items-end justify-center bg-slate-950/70 backdrop-blur-sm transition-opacity" onclick="closeModal(event)">
+      <div class="w-full max-w-[480px] bg-slate-900 border-t border-slate-700/80 rounded-t-3xl p-5 shadow-2xl space-y-4 transform transition-transform duration-300 translate-y-0" onclick="event.stopPropagation()">
+        
+        <div class="w-12 h-1.5 bg-slate-700 rounded-full mx-auto mb-1 opacity-60"></div>
+        
+        <!-- Modal Header with Badge Image (1.1.png - 3.4.png) -->
+        <div class="flex items-start justify-between">
+          <div class="flex items-center gap-3">
+            <div id="modal-badge-box" class="w-16 h-16 rounded-2xl bg-amber-500/15 border border-amber-500/40 text-amber-400 flex items-center justify-center text-2xl shadow-inner overflow-hidden p-1 shrink-0">
+              🏔
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <span id="modal-stage-num" class="text-xs font-extrabold text-amber-400 uppercase tracking-wider">Этап 1</span>
+                <span id="modal-elevation" class="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-800 text-slate-300">500 м</span>
+              </div>
+              <h3 id="modal-title" class="text-xl font-black text-white leading-tight mt-0.5">Название Этапа</h3>
+            </div>
+          </div>
+          <button onclick="closeModal()" class="w-8 h-8 rounded-full bg-slate-800 text-slate-400 flex items-center justify-center font-bold hover:bg-slate-700 hover:text-white transition shrink-0">
+            ✕
+          </button>
+        </div>
+
+        <!-- Artifact Box with Item Image (1.png - 12.png) -->
+        <div class="bg-slate-950/60 rounded-xl p-3 border border-slate-800 flex items-center gap-3">
+          <div id="modal-item-box" class="w-14 h-14 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 font-bold shrink-0 text-xl overflow-hidden p-1">
+            🏆
+          </div>
+          <div class="overflow-hidden">
+            <div class="text-[11px] uppercase font-bold text-slate-400">Награда / Артефакт</div>
+            <div id="modal-artifact" class="text-sm font-bold text-amber-300 leading-snug">Название Артефакта</div>
+          </div>
+        </div>
+
+        <!-- Description -->
+        <p id="modal-desc" class="text-xs text-slate-300 leading-relaxed bg-slate-800/40 p-3 rounded-xl border border-slate-800">
+          Описание испытания и цели данного этапа экспедиции.
+        </p>
+
+        <!-- Status & Action Button -->
+        <div class="pt-1 flex items-center justify-between gap-3">
+          <div id="modal-status-badge" class="px-3 py-2 rounded-xl text-xs font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+            Активный этап
+          </div>
+          <button id="modal-action-btn" onclick="closeModal()" class="flex-1 py-3 px-4 rounded-xl font-extrabold text-xs uppercase tracking-wider bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 shadow-lg shadow-amber-500/25 active:scale-95 transition text-center">
+            Понятно
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    /* ==========================================================================
+       DATA STRUCTURE: 12 STAGES, CALIBRATED COORDS & PNG ASSETS (1.png-12.png, 1.1.png-3.4.png)
+       ========================================================================== */
+    const STAGES = [
+      {
+        id: 1,
+        elevation: 500,
+        title: "Лесной Старт",
+        artifact: "Блокнот следопыта",
+        badgeImg: "1.1.png",
+        itemImg: "1.png",
+        icon: "📓",
+        coords: { left: 35.0, top: 84.5 },
+        desc: "Первый шаг на пути к вершине. У подножия горы возле костра формируется команда и закладываются основы дисциплины."
+      },
+      {
+        id: 2,
+        elevation: 950,
+        title: "Переправа через реку",
+        artifact: "Страховочный узел дружбы",
+        badgeImg: "1.2.png",
+        itemImg: "2.png",
+        icon: "🪢",
+        coords: { left: 59.9, top: 77.5 },
+        desc: "Переход через бурную горную реку по деревянному мосту. Проверка доверия и взаимовыручки участников."
+      },
+      {
+        id: 3,
+        elevation: 1400,
+        title: "Лесная тропа",
+        artifact: "Штурмовой трос",
+        badgeImg: "1.3.png",
+        itemImg: "3.png",
+        icon: "🧵",
+        coords: { left: 78.8, top: 73.8 },
+        desc: "Подъем по хвойному серпантину. Закрепление навыка удержания темпа и помощи отстающим в отряде."
+      },
+      {
+        id: 4,
+        elevation: 1900,
+        title: "Каменный уступ",
+        artifact: "Тормозной карабин",
+        badgeImg: "1.4.png",
+        itemImg: "4.png",
+        icon: "🧗",
+        coords: { left: 80.7, top: 65.2 },
+        desc: "Выход из лесной зоны на каменистые ступени. Освоение техники безопасного подъема и страховочного снаряжения."
+      },
+      {
+        id: 5,
+        elevation: 2400,
+        title: "Горный серпантин",
+        artifact: "Прочный штормовой пояс",
+        badgeImg: "2.1.png",
+        itemImg: "5.png",
+        icon: "🥋",
+        coords: { left: 63.1, top: 58.4 },
+        desc: "Узкая тропа над каньоном. Испытание на выносливость, преодоление страха высоты и концентрацию внимания."
+      },
+      {
+        id: 6,
+        elevation: 2900,
+        title: "Скалистый карниз",
+        artifact: "Кислородный баллон выдержки",
+        badgeImg: "2.2.png",
+        itemImg: "6.png",
+        icon: "🫁",
+        coords: { left: 31.2, top: 51.7 },
+        desc: "Крутой подъем с ограничением кислорода. Развитие самоконтроля, правильного дыхания и твердости характера."
+      },
+      {
+        id: 7,
+        elevation: 3400,
+        title: "Высотный лагерь",
+        artifact: "Высотная рация",
+        badgeImg: "2.3.png",
+        itemImg: "7.png",
+        icon: "📻",
+        coords: { left: 67.8, top: 44.4 },
+        desc: "Штурмовой лагерь №2 с палатками и огнем. Время передышки, вечернего разбора и координации дальнейших действий."
+      },
+      {
+        id: 8,
+        elevation: 3950,
+        title: "Снежная граница",
+        artifact: "Кованные скальные кошки",
+        badgeImg: "2.4.png",
+        itemImg: "8.png",
+        icon: "⚙️",
+        coords: { left: 75.9, top: 34.2 },
+        desc: "Переход из скальной зоны на обледенелый склон. Надевание кошек и адаптация к штормовому ветру."
+      },
+      {
+        id: 9,
+        elevation: 4450,
+        title: "Ледниковый подъем",
+        artifact: "Штурмовой ледоруб",
+        badgeImg: "3.1.png",
+        itemImg: "9.png",
+        icon: "⛏️",
+        coords: { left: 36, top: 26.3 },
+        desc: "Продвижение по глубокому снегу и льду. Формирование навыка преодоления препятствий в экстремальных условиях."
+      },
+      {
+        id: 10,
+        elevation: 4900,
+        title: "Снежный гребень",
+        artifact: "Штурмовой горн",
+        badgeImg: "3.2.png",
+        itemImg: "10.png",
+        icon: "📯",
+        coords: { left: 59.5, top: 19.6 },
+        desc: "Тропа по узкому снежному гребню с сигнальными флажками. Взаимовыручка в условиях минимальной видимости."
+      },
+      {
+        id: 11,
+        elevation: 5300,
+        title: "Предвершинный взлет",
+        artifact: "Штурмовой золотой карабин партнерства",
+        badgeImg: "3.3.png",
+        itemImg: "11.png",
+        icon: "🎗️",
+        coords: { left: 71.4, top: 11.7 },
+        desc: "Финальный крутой участок перед пиком. Полная мобилизация всех ресурсов духа и поддержка каждого участника."
+      },
+      {
+        id: 12,
+        elevation: 5642,
+        title: "Пик Настоящих Мужчин",
+        artifact: "Флаг первопроходца",
+        badgeImg: "3.4.png",
+        itemImg: "12.png",
+        icon: "🚩",
+        coords: { left: 56, top: 5.5 },
+        desc: "Главная вершина! Установка флага отряда. Победа над собой, вручение высших наград и признание успеха!"
+      }
+    ];
+
+    let currentStage = 1;
+
+    window.addEventListener('DOMContentLoaded', () => {
+      if (window.Telegram && window.Telegram.WebApp) {
+        window.Telegram.WebApp.ready();
+        window.Telegram.WebApp.expand();
+      }
+
+      const urlParams = new URLSearchParams(window.location.search);
+      const stageParam = parseInt(urlParams.get('stage'));
+      if (stageParam && stageParam >= 1 && stageParam <= 12) {
+        currentStage = stageParam;
+      }
+
+      renderCheckpoints();
+      renderBackpack();
+      updateHUD();
+
+      setTimeout(() => {
+        scrollToStagePin(currentStage, false);
+      }, 300);
+    });
+
+    function handleMapImageError() {
+      const imgEl = document.getElementById('map-bg-img');
+      if (imgEl.src.includes('watermarked_img_13866416841372034919.jpg')) {
+        imgEl.src = 'map-full.jpg';
+      } else {
+        imgEl.style.display = 'none';
+        document.getElementById('map-svg-fallback').classList.remove('hidden');
+      }
+    }
+
+    function handleMapFileUpload(event) {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const imgEl = document.getElementById('map-bg-img');
+          imgEl.src = e.target.result;
+          imgEl.style.display = 'block';
+          document.getElementById('map-svg-fallback').classList.add('hidden');
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    function renderCheckpoints() {
+      const layer = document.getElementById('map-checkpoints-layer');
+      layer.innerHTML = '';
+
+      STAGES.forEach(stage => {
+        const isCompleted = stage.id < currentStage;
+        const isActive = stage.id === currentStage;
+
+        const pin = document.createElement('button');
+        pin.id = `pin-stage-${stage.id}`;
+        pin.onclick = () => openStageModal(stage.id);
+        pin.className = `absolute transform -translate-x-1/2 -translate-y-1/2 transition-all duration-300 focus:outline-none flex flex-col items-center group cursor-pointer z-20 ${
+          isActive ? 'scale-125 z-30' : 'hover:scale-110'
+        }`;
+        pin.style.left = `${stage.coords.left}%`;
+        pin.style.top = `${stage.coords.top}%`;
+
+        let innerHtml = '';
+        if (isActive) {
+          innerHtml = `
+            <div class="relative">
+              <div class="absolute -inset-2 rounded-full bg-amber-500/40 animate-ping opacity-75"></div>
+              <div class="w-10 h-10 rounded-full bg-gradient-to-b from-amber-300 via-amber-500 to-amber-700 border-2 border-white shadow-xl flex items-center justify-center font-black text-slate-950 text-sm shadow-amber-500/50">
+                ${stage.id}
+              </div>
+              <div class="absolute -top-6 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full bg-amber-500 text-slate-950 font-black text-[10px] whitespace-nowrap shadow-md flex items-center gap-1">
+                <span>📍 Вы здесь</span>
+              </div>
+            </div>
+          `;
+        } else if (isCompleted) {
+          innerHtml = `
+            <div class="w-8 h-8 rounded-full bg-gradient-to-b from-emerald-400 to-emerald-700 border border-emerald-200 shadow-lg flex items-center justify-center text-white font-bold text-xs">
+              ✓
+            </div>
+          `;
+        } else {
+          innerHtml = `
+            <div class="w-7 h-7 rounded-full bg-slate-800/90 border border-slate-600/80 shadow flex items-center justify-center text-slate-400 font-bold text-xs backdrop-blur-xs opacity-85">
+              ${stage.id}
+            </div>
+          `;
+        }
+
+        pin.innerHTML = innerHtml;
+        layer.appendChild(pin);
+      });
+    }
+
+    function renderBackpack() {
+      const grid = document.getElementById('backpack-grid');
+      grid.innerHTML = '';
+
+      STAGES.forEach(stage => {
+        const isUnlocked = stage.id <= currentStage;
+
+        const card = document.createElement('div');
+        card.onclick = () => openStageModal(stage.id);
+        card.className = `glass-card rounded-2xl p-3 border transition active:scale-95 cursor-pointer flex flex-col justify-between ${
+          isUnlocked 
+            ? 'border-amber-500/30 bg-slate-900/80 hover:border-amber-500/60' 
+            : 'border-slate-800/80 opacity-55 bg-slate-950/40'
+        }`;
+
+        const itemMediaHtml = isUnlocked
+          ? `<img src="${stage.itemImg}" alt="${stage.artifact}" class="w-full h-full object-contain rounded-lg" onerror="this.outerHTML='<span class=\\'text-2xl\\'>${stage.icon}</span>'">`
+          : `<span class="text-2xl">🔒</span>`;
+
+        const badgeMiniHtml = isUnlocked
+          ? `<img src="${stage.badgeImg}" alt="Значок ${stage.id}" class="w-5 h-5 object-contain rounded-full" onerror="this.style.display='none'">`
+          : ``;
+
+        card.innerHTML = `
+          <div>
+            <div class="flex items-center justify-between text-[10px] text-slate-400 font-semibold mb-2">
+              <span class="flex items-center gap-1">${badgeMiniHtml} Этап ${stage.id}</span>
+              <span>${stage.elevation} м</span>
+            </div>
+            
+            <div class="w-16 h-16 rounded-xl mx-auto mb-2 flex items-center justify-center p-1.5 overflow-hidden ${
+              isUnlocked 
+                ? 'bg-amber-500/10 border border-amber-500/30 text-amber-300 shadow-inner' 
+                : 'bg-slate-800/40 border border-slate-700/40 text-slate-500'
+            }">
+              ${itemMediaHtml}
+            </div>
+            
+            <div class="text-xs font-bold text-slate-100 text-center line-clamp-2 min-h-[2rem] flex items-center justify-center">
+              ${stage.artifact}
+            </div>
+          </div>
+
+          <div class="mt-2.5 text-center">
+            <span class="inline-block px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase ${
+              isUnlocked ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' : 'bg-slate-800 text-slate-500'
+            }">
+              ${isUnlocked ? 'Заработано' : 'Заблокировано'}
+            </span>
+          </div>
+        `;
+
+        grid.appendChild(card);
+      });
+
+      document.getElementById('backpack-progress-count').innerText = `${currentStage}/12`;
+    }
+
+    function updateHUD() {
+      const stageData = STAGES.find(s => s.id === currentStage);
+      if (!stageData) return;
+
+      document.getElementById('hud-elevation').innerText = stageData.elevation.toLocaleString('ru-RU');
+      document.getElementById('hud-stage-badge').innerText = `Этап ${currentStage}/12`;
+
+      renderCheckpoints();
+      renderBackpack();
+    }
+
+    function changeStage(delta) {
+      const newStage = currentStage + delta;
+      if (newStage >= 1 && newStage <= 12) {
+        currentStage = newStage;
+        updateHUD();
+        scrollToStagePin(currentStage, true);
+      }
+    }
+
+    function scrollToStagePin(stageId, smooth = true) {
+      const pin = document.getElementById(`pin-stage-${stageId}`);
+      const container = document.getElementById('tab-map');
+      if (pin && container) {
+        const pinTop = pin.offsetTop;
+        const containerHeight = container.clientHeight;
+        const targetScroll = pinTop - containerHeight / 2;
+
+        container.scrollTo({
+          top: Math.max(0, targetScroll),
+          behavior: smooth ? 'smooth' : 'auto'
+        });
+      }
+    }
+
+    function switchTab(tab) {
+      const mapTab = document.getElementById('tab-map');
+      const backpackTab = document.getElementById('tab-backpack');
+      const btnMap = document.getElementById('nav-btn-map');
+      const btnBackpack = document.getElementById('nav-btn-backpack');
+
+      if (tab === 'map') {
+        mapTab.classList.remove('hidden');
+        backpackTab.classList.add('hidden');
+        
+        btnMap.className = 'flex flex-col items-center gap-1 text-amber-400 transition font-semibold';
+        btnMap.querySelector('div').className = 'p-1.5 rounded-xl bg-amber-500/10 border border-amber-500/20';
+
+        btnBackpack.className = 'flex flex-col items-center gap-1 text-slate-400 hover:text-slate-200 transition font-medium';
+        btnBackpack.querySelector('div').className = 'p-1.5 rounded-xl bg-slate-800/50 border border-slate-700/50';
+        
+        setTimeout(() => scrollToStagePin(currentStage, false), 50);
+      } else {
+        mapTab.classList.add('hidden');
+        backpackTab.classList.remove('hidden');
+
+        btnBackpack.className = 'flex flex-col items-center gap-1 text-amber-400 transition font-semibold';
+        btnBackpack.querySelector('div').className = 'p-1.5 rounded-xl bg-amber-500/10 border border-amber-500/20';
+
+        btnMap.className = 'flex flex-col items-center gap-1 text-slate-400 hover:text-slate-200 transition font-medium';
+        btnMap.querySelector('div').className = 'p-1.5 rounded-xl bg-slate-800/50 border border-slate-700/50';
+      }
+    }
+
+    function openStageModal(stageId) {
+      const stage = STAGES.find(s => s.id === stageId);
+      if (!stage) return;
+
+      const isCompleted = stage.id < currentStage;
+      const isActive = stage.id === currentStage;
+      const isUnlocked = stage.id <= currentStage;
+
+      document.getElementById('modal-stage-num').innerText = `Этап ${stage.id} из 12`;
+      document.getElementById('modal-elevation').innerText = `${stage.elevation} м`;
+      document.getElementById('modal-title').innerText = stage.title;
+      document.getElementById('modal-artifact').innerText = stage.artifact;
+      document.getElementById('modal-desc').innerText = stage.desc;
+
+      // Render Badge Image (1.1.png - 3.4.png) in Modal Header
+      const badgeBox = document.getElementById('modal-badge-box');
+      badgeBox.innerHTML = `<img src="${stage.badgeImg}" alt="Значок этапа ${stage.id}" class="w-full h-full object-contain rounded-xl ${isUnlocked ? '' : 'grayscale opacity-60'}" onerror="this.outerHTML='<span>🏔</span>'">`;
+
+      // Render Item Image (1.png - 12.png) in Artifact Box
+      const itemBox = document.getElementById('modal-item-box');
+      itemBox.innerHTML = `<img src="${stage.itemImg}" alt="${stage.artifact}" class="w-full h-full object-contain rounded-lg ${isUnlocked ? '' : 'grayscale opacity-50'}" onerror="this.outerHTML='<span>${stage.icon}</span>'">`;
+
+      const statusBadge = document.getElementById('modal-status-badge');
+      if (isActive) {
+        statusBadge.className = 'px-3 py-2 rounded-xl text-xs font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center gap-1.5';
+        statusBadge.innerHTML = '<span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span> Текущая цель';
+      } else if (isCompleted) {
+        statusBadge.className = 'px-3 py-2 rounded-xl text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5';
+        statusBadge.innerHTML = '✓ Этап пройден';
+      } else {
+        statusBadge.className = 'px-3 py-2 rounded-xl text-xs font-bold bg-slate-800 text-slate-400 border border-slate-700 flex items-center gap-1.5';
+        statusBadge.innerHTML = '🔒 Предстоит пройти';
+      }
+
+      document.getElementById('stage-modal').classList.remove('hidden');
+    }
+
+    function closeModal(event) {
+      if (!event || event.target.id === 'stage-modal') {
+        document.getElementById('stage-modal').classList.add('hidden');
+      }
+    }
+  </script>
+</body>
+</html>
