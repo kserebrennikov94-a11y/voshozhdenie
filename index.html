@@ -32,11 +32,16 @@
             'pulse-slow': 'pulse 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
             'bounce-gentle': 'bounce 2s infinite',
             'glow-pulse': 'glow 2s ease-in-out infinite alternate',
+            'fog-sway': 'fogSway 8s ease-in-out infinite alternate',
           },
           keyframes: {
             glow: {
               '0%': { filter: 'drop-shadow(0 0 6px rgba(245, 158, 11, 0.6))' },
               '100%': { filter: 'drop-shadow(0 0 16px rgba(245, 158, 11, 0.95))' }
+            },
+            fogSway: {
+              '0%': { transform: 'scale(1.04) translateX(-1.5%)' },
+              '100%': { transform: 'scale(1.06) translateX(1.5%)' }
             }
           }
         }
@@ -72,6 +77,13 @@
       -webkit-backdrop-filter: blur(16px);
       border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     }
+
+    /* Цельный слой тумана с плавным переходом высоты и мягкой нижней кромкой */
+    #map-fog-overlay {
+      transition: height 0.75s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.6s ease;
+      -webkit-mask-image: linear-gradient(to bottom, #000000 0%, #000000 84%, transparent 98%);
+      mask-image: linear-gradient(to bottom, #000000 0%, #000000 84%, transparent 98%);
+    }
   </style>
 </head>
 <body class="h-full w-full bg-slate-950 overflow-hidden flex justify-center items-center select-none">
@@ -80,7 +92,7 @@
   <div id="app" class="relative w-full max-w-[480px] h-full max-h-[100vh] bg-slate-900 flex flex-col overflow-hidden shadow-2xl border-x border-slate-800/50">
     
     <!-- Top HUD Navigation Header -->
-    <header class="glass-hud sticky top-0 z-30 px-4 py-3 flex items-center justify-between shrink-0 shadow-lg">
+    <header class="glass-hud sticky top-0 z-40 px-4 py-3 flex items-center justify-between shrink-0 shadow-lg">
       <div class="flex items-center gap-3">
         <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center text-white shadow-md shadow-amber-500/20">
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -121,7 +133,7 @@
       
       <!-- TAB 1: 9:21 MAP VIEW -->
       <div id="tab-map" class="w-full h-full overflow-y-auto overflow-x-hidden no-scrollbar relative">
-        <div id="map-scroll-container" class="relative w-full aspect-[9/21] min-h-[950px] bg-slate-900 mx-auto">
+        <div id="map-scroll-container" class="relative w-full aspect-[9/21] min-h-[950px] bg-slate-900 mx-auto overflow-hidden">
           
           <img 
             id="map-bg-img" 
@@ -154,7 +166,19 @@
             </svg>
           </div>
 
-          <div id="map-checkpoints-layer" class="absolute inset-0 z-10"></div>
+          <!-- ЦЕЛЬНЫЙ ТУМАН ИЗ КАРТИНКИ fog.jpg -->
+          <div id="map-fog-overlay" class="absolute top-0 left-0 right-0 z-20 overflow-hidden pointer-events-auto" style="height: 82%;">
+            <img 
+              id="fog-texture-img"
+              src="fog.jpg" 
+              alt="Облака тумана" 
+              class="w-full h-full object-cover object-bottom animate-fog-sway select-none pointer-events-none"
+              onerror="handleFogImageError()"
+            />
+            <div id="fog-fallback-layer" class="hidden w-full h-full bg-gradient-to-b from-slate-300 via-slate-200 to-slate-400"></div>
+          </div>
+
+          <div id="map-checkpoints-layer" class="absolute inset-0 z-30 pointer-events-none"></div>
 
         </div>
       </div>
@@ -184,7 +208,7 @@
     </main>
 
     <!-- Bottom Navigation Bar -->
-    <nav class="glass-hud sticky bottom-0 z-30 px-6 py-2.5 flex items-center justify-around shrink-0 border-t border-slate-800/80 pb-safe">
+    <nav class="glass-hud sticky bottom-0 z-40 px-6 py-2.5 flex items-center justify-around shrink-0 border-t border-slate-800/80 pb-safe">
       <button id="nav-btn-map" onclick="switchTab('map')" class="flex flex-col items-center gap-1 text-amber-400 transition font-semibold">
         <div class="p-1.5 rounded-xl bg-amber-500/10 border border-amber-500/20">
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -447,6 +471,33 @@
       }
     }
 
+    function handleFogImageError() {
+      const fogImg = document.getElementById('fog-texture-img');
+      if (fogImg.src.includes('fog.jpg')) {
+        fogImg.src = 'fog.png';
+      } else {
+        fogImg.style.display = 'none';
+        document.getElementById('fog-fallback-layer').classList.remove('hidden');
+      }
+    }
+
+    function updateFogOfWar() {
+      const fogEl = document.getElementById('map-fog-overlay');
+      const stageData = STAGES.find(s => s.id === currentStage);
+      if (!fogEl || !stageData) return;
+
+      if (currentStage >= 12) {
+        fogEl.style.height = '0%';
+        fogEl.style.opacity = '0';
+        fogEl.style.pointerEvents = 'none';
+      } else {
+        const fogBottomPercent = Math.max(0, stageData.coords.top - 2.5);
+        fogEl.style.height = `${fogBottomPercent}%`;
+        fogEl.style.opacity = '1';
+        fogEl.style.pointerEvents = 'auto';
+      }
+    }
+
     function renderCheckpoints() {
       const layer = document.getElementById('map-checkpoints-layer');
       layer.innerHTML = '';
@@ -454,12 +505,15 @@
       STAGES.forEach(stage => {
         const isCompleted = stage.id < currentStage;
         const isActive = stage.id === currentStage;
+        const isLocked = stage.id > currentStage;
+
+        if (isLocked) return;
 
         const pin = document.createElement('button');
         pin.id = `pin-stage-${stage.id}`;
         pin.onclick = () => openStageModal(stage.id);
-        pin.className = `absolute transform -translate-x-1/2 -translate-y-1/2 transition-all duration-300 focus:outline-none flex flex-col items-center group cursor-pointer z-20 ${
-          isActive ? 'scale-125 z-30' : 'hover:scale-110'
+        pin.className = `pointer-events-auto absolute transform -translate-x-1/2 -translate-y-1/2 transition-all duration-300 focus:outline-none flex flex-col items-center group cursor-pointer ${
+          isActive ? 'scale-125 z-30' : 'hover:scale-110 z-20'
         }`;
         pin.style.left = `${stage.coords.left}%`;
         pin.style.top = `${stage.coords.top}%`;
@@ -481,12 +535,6 @@
           innerHtml = `
             <div class="w-[44px] h-[44px] rounded-full bg-gradient-to-b from-emerald-400 to-emerald-700 border border-emerald-200 shadow-lg flex items-center justify-center text-white font-bold text-xs">
               ✓
-            </div>
-          `;
-        } else {
-          innerHtml = `
-            <div class="w-[42px] h-[42px] rounded-full bg-slate-800/90 border border-slate-600/80 shadow flex items-center justify-center text-slate-400 font-bold text-xs backdrop-blur-xs opacity-85">
-              ${stage.id}
             </div>
           `;
         }
@@ -535,7 +583,7 @@
             </div>
             
             <div class="text-xs font-bold text-slate-100 text-center line-clamp-2 min-h-[2rem] flex items-center justify-center">
-              ${stage.artifact}
+              ${isUnlocked ? stage.artifact : 'Неизвестный артефакт'}
             </div>
           </div>
 
@@ -543,7 +591,7 @@
             <span class="inline-block px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase ${
               isUnlocked ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' : 'bg-slate-800 text-slate-500'
             }">
-              ${isUnlocked ? 'Заработано' : 'Заблокировано'}
+              ${isUnlocked ? 'Заработано' : 'Скрыто туманом'}
             </span>
           </div>
         `;
@@ -561,6 +609,7 @@
       document.getElementById('hud-elevation').innerText = stageData.elevation.toLocaleString('ru-RU');
       document.getElementById('hud-stage-badge').innerText = `Этап ${currentStage}/12`;
 
+      updateFogOfWar();
       renderCheckpoints();
       renderBackpack();
     }
@@ -628,17 +677,21 @@
 
       document.getElementById('modal-stage-num').innerText = `Этап ${stage.id} из 12`;
       document.getElementById('modal-elevation').innerText = `${stage.elevation} м`;
-      document.getElementById('modal-title').innerText = stage.title;
-      document.getElementById('modal-artifact').innerText = stage.artifact;
-      document.getElementById('modal-desc').innerText = stage.desc;
+      document.getElementById('modal-title').innerText = isUnlocked ? stage.title : 'Неизведанный участок';
+      document.getElementById('modal-artifact').innerText = isUnlocked ? stage.artifact : 'Откроется после прохождения этапа';
+      document.getElementById('modal-desc').innerText = isUnlocked ? stage.desc : 'Эта часть горы пока скрыта за густыми облаками. Заверши предыдущие этапы экспедиции, чтобы открыть путь дальше.';
 
       // Render Badge Image (1.1.png - 3.4.png) in Modal Header
       const badgeBox = document.getElementById('modal-badge-box');
-      badgeBox.innerHTML = `<img src="${stage.badgeImg}" alt="Значок этапа ${stage.id}" class="w-full h-full object-contain rounded-xl ${isUnlocked ? '' : 'grayscale opacity-60'}" onerror="this.outerHTML='<span>🏔</span>'">`;
+      badgeBox.innerHTML = isUnlocked
+        ? `<img src="${stage.badgeImg}" alt="Значок этапа ${stage.id}" class="w-full h-full object-contain rounded-xl" onerror="this.outerHTML='<span>🏔</span>'">`
+        : `<span>☁️</span>`;
 
       // Render Item Image (1.png - 12.png) in Artifact Box
       const itemBox = document.getElementById('modal-item-box');
-      itemBox.innerHTML = `<img src="${stage.itemImg}" alt="${stage.artifact}" class="w-full h-full object-contain rounded-lg ${isUnlocked ? '' : 'grayscale opacity-50'}" onerror="this.outerHTML='<span>${stage.icon}</span>'">`;
+      itemBox.innerHTML = isUnlocked
+        ? `<img src="${stage.itemImg}" alt="${stage.artifact}" class="w-full h-full object-contain rounded-lg" onerror="this.outerHTML='<span>${stage.icon}</span>'">`
+        : `<span>🔒</span>`;
 
       const statusBadge = document.getElementById('modal-status-badge');
       if (isActive) {
@@ -649,7 +702,7 @@
         statusBadge.innerHTML = '✓ Этап пройден';
       } else {
         statusBadge.className = 'px-3 py-2 rounded-xl text-xs font-bold bg-slate-800 text-slate-400 border border-slate-700 flex items-center gap-1.5';
-        statusBadge.innerHTML = '🔒 Предстоит пройти';
+        statusBadge.innerHTML = '☁️ Скрыто туманом';
       }
 
       document.getElementById('stage-modal').classList.remove('hidden');
