@@ -213,7 +213,7 @@
         <!-- Modal Header with Badge Image (1.1.png - 3.4.png) -->
         <div class="flex items-start justify-between">
           <div class="flex items-center gap-3">
-            <div id="modal-badge-box" class="w-16 h-16 rounded-2xl bg-amber-500/15 border border-amber-500/40 text-amber-400 flex items-center justify-center text-2xl shadow-inner overflow-hidden p-1 shrink-0">
+            <div id="modal-badge-box" class="w-16 h-16 rounded-2xl bg-amber-500/15 border border-amber-500/40 text-amber-400 flex items-center justify-center text-2xl shadow-inner overflow-hidden p-0 shrink-0">
               🏔
             </div>
             <div>
@@ -231,7 +231,7 @@
 
         <!-- Artifact Box with Item Image (1.png - 12.png) -->
         <div class="bg-slate-950/60 rounded-xl p-3 border border-slate-800 flex items-center gap-3">
-          <div id="modal-item-box" class="w-14 h-14 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 font-bold shrink-0 text-xl overflow-hidden p-1">
+          <div id="modal-item-box" class="w-14 h-14 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 font-bold shrink-0 text-xl overflow-hidden p-0">
             🏆
           </div>
           <div class="overflow-hidden">
@@ -274,7 +274,7 @@
         badgeImg: "1.1.png",
         itemImg: "1.png",
         icon: "📓",
-        coords: { left: 35.0, top: 84.5 },
+        coords: { left: 35.2, top: 84.3 },
         desc: "Первый шаг на пути к вершине. У подножия горы возле костра формируется команда и закладываются основы дисциплины."
       },
       {
@@ -285,7 +285,7 @@
         badgeImg: "1.2.png",
         itemImg: "2.png",
         icon: "🪢",
-        coords: { left: 59.9, top: 77.5 },
+        coords: { left: 60, top: 77.5 },
         desc: "Переход через бурную горную реку по деревянному мосту. Проверка доверия и взаимовыручки участников."
       },
       {
@@ -340,7 +340,7 @@
         badgeImg: "2.3.png",
         itemImg: "7.png",
         icon: "📻",
-        coords: { left: 67.8, top: 44.4 },
+        coords: { left: 67.75, top: 44.4 },
         desc: "Штурмовой лагерь №2 с палатками и огнем. Время передышки, вечернего разбора и координации дальнейших действий."
       },
       {
@@ -395,7 +395,7 @@
         badgeImg: "3.4.png",
         itemImg: "12.png",
         icon: "🚩",
-        coords: { left: 56, top: 5.5 },
+        coords: { left: 56.4, top: 5.8 },
         desc: "Главная вершина! Установка флага отряда. Победа над собой, вручение высших наград и признание успеха!"
       }
     ];
@@ -479,13 +479,13 @@
           `;
         } else if (isCompleted) {
           innerHtml = `
-            <div class="w-8 h-8 rounded-full bg-gradient-to-b from-emerald-400 to-emerald-700 border border-emerald-200 shadow-lg flex items-center justify-center text-white font-bold text-xs">
+            <div class="w-[42px] h-[42px] rounded-full bg-gradient-to-b from-emerald-400 to-emerald-700 border border-emerald-200 shadow-lg flex items-center justify-center text-white font-bold text-xs">
               ✓
             </div>
           `;
         } else {
           innerHtml = `
-            <div class="w-7 h-7 rounded-full bg-slate-800/90 border border-slate-600/80 shadow flex items-center justify-center text-slate-400 font-bold text-xs backdrop-blur-xs opacity-85">
+            <div class="w-[42px] h-[42px] rounded-full bg-slate-800/90 border border-slate-600/80 shadow flex items-center justify-center text-slate-400 font-bold text-xs backdrop-blur-xs opacity-85">
               ${stage.id}
             </div>
           `;
@@ -526,7 +526,7 @@
               <span>${stage.elevation} м</span>
             </div>
             
-            <div class="w-16 h-16 rounded-xl mx-auto mb-2 flex items-center justify-center p-1.5 overflow-hidden ${
+            <div class="w-16 h-16 rounded-xl mx-auto mb-2 flex items-center justify-center p-0 overflow-hidden ${
               isUnlocked 
                 ? 'bg-amber-500/10 border border-amber-500/30 text-amber-300 shadow-inner' 
                 : 'bg-slate-800/40 border border-slate-700/40 text-slate-500'
