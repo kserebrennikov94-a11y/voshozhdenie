@@ -168,12 +168,11 @@
 
           <!-- ЦЕЛЬНЫЙ ТУМАН ИЗ КАРТИНКИ fog.jpg -->
           <div id="map-fog-overlay" class="absolute top-0 left-0 right-0 z-20 overflow-hidden pointer-events-auto" style="height: 82%;">
-            <img 
+           <img 
               id="fog-texture-img"
               src="fog.jpg" 
               alt="Облака тумана" 
-              style="position: absolute; left: 0; right: 0; bottom: -135px; width: 100%; height: calc(100% + 135px); object-fit: cover; object-position: bottom;"
-              class="animate-fog-sway select-none pointer-events-none"
+              class="absolute inset-x-0 -bottom-[42px] w-full h-[calc(100%+42px)] object-cover object-bottom animate-fog-sway select-none pointer-events-none"
               onerror="handleFogImageError()"
             />
             <div id="fog-fallback-layer" class="hidden w-full h-full bg-gradient-to-b from-slate-300 via-slate-200 to-slate-400"></div>
