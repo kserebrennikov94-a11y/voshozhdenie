@@ -8,7 +8,7 @@
   <!-- Telegram WebApp SDK -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   
-  <!-- Tailwind CS CDN -->
+  <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   
   <!-- Google Fonts: Inter -->
@@ -78,8 +78,7 @@
       border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     }
 
-    /* Цельный слой тумана с плавным переходом высоты и мягкой нижней кромкой */
-#map-fog-overlay {
+    #map-fog-overlay {
       transition: height 0.75s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.6s ease;
       -webkit-mask-image: linear-gradient(to top, transparent 0px, #000000 28px);
       mask-image: linear-gradient(to top, transparent 0px, #000000 28px);
@@ -88,6 +87,9 @@
     #fog-texture-img {
       filter: blur(1.5px) drop-shadow(0 8px 12px rgba(203, 213, 225, 0.75));
     }
+  </style>
+</head>
+<body class="h-full w-full bg-slate-950 overflow-hidden flex justify-center items-center select-none">
 
   <!-- Mobile Frame Container -->
   <div id="app" class="relative w-full max-w-[480px] h-full max-h-[100vh] bg-slate-900 flex flex-col overflow-hidden shadow-2xl border-x border-slate-800/50">
@@ -167,7 +169,7 @@
             </svg>
           </div>
 
-          <!-- ЦЕЛЬНЫЙ ТУМАН ИЗ КАРТИНКИ fog.jpg -->
+          <!-- ЦЕЛЬНЫЙ ТУМАН ИЗ КАРТИНКИ fog.png -->
           <div id="map-fog-overlay" class="absolute top-0 left-0 right-0 z-20 overflow-hidden pointer-events-auto" style="height: 82%;">
             <img 
               id="fog-texture-img"
@@ -287,9 +289,6 @@
   </div>
 
   <script>
-    /* ==========================================================================
-       DATA STRUCTURE: 12 STAGES, CALIBRATED COORDS & PNG ASSETS (1.png-12.png, 1.1.png-3.4.png)
-       ========================================================================== */
     const STAGES = [
       {
         id: 1,
@@ -472,11 +471,11 @@
       }
     }
 
- function handleFogImageError() {
+    function handleFogImageError() {
       const fogImg = document.getElementById('fog-texture-img');
       fogImg.style.display = 'none';
       document.getElementById('fog-fallback-layer').classList.remove('hidden');
-     }
+    }
 
     function updateFogOfWar() {
       const fogEl = document.getElementById('map-fog-overlay');
@@ -678,13 +677,11 @@
       document.getElementById('modal-artifact').innerText = isUnlocked ? stage.artifact : 'Откроется после прохождения этапа';
       document.getElementById('modal-desc').innerText = isUnlocked ? stage.desc : 'Эта часть горы пока скрыта за густыми облаками. Заверши предыдущие этапы экспедиции, чтобы открыть путь дальше.';
 
-      // Render Badge Image (1.1.png - 3.4.png) in Modal Header
       const badgeBox = document.getElementById('modal-badge-box');
       badgeBox.innerHTML = isUnlocked
         ? `<img src="${stage.badgeImg}" alt="Значок этапа ${stage.id}" class="w-full h-full object-contain rounded-xl" onerror="this.outerHTML='<span>🏔</span>'">`
         : `<span>☁️</span>`;
 
-      // Render Item Image (1.png - 12.png) in Artifact Box
       const itemBox = document.getElementById('modal-item-box');
       itemBox.innerHTML = isUnlocked
         ? `<img src="${stage.itemImg}" alt="${stage.artifact}" class="w-full h-full object-contain rounded-lg" onerror="this.outerHTML='<span>${stage.icon}</span>'">`
